@@ -75,14 +75,14 @@ public class ClienteController {
 	}
 
 	@GetMapping("/buscar")
-	public ResponseEntity<List<Cliente>> buscarClientesPorNome(@RequestParam String nome) {
-		List<Cliente> clientes = clienteRepo.findByNomeIgnoreCase(nome);
+	public ResponseEntity<Cliente> buscarClientesPorNome(@RequestParam String nome) {
+		Cliente cliente = clienteRepo.findByNomeIgnoreCase(nome);
 
-		if (clientes.isEmpty()) {
+		if (cliente == null) {
 			return ResponseEntity.noContent().build();
 		}
 
-		return ResponseEntity.ok(clientes);
+		return ResponseEntity.ok(cliente);
 	}
 
 	@PutMapping("/{id}")

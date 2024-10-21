@@ -5,17 +5,22 @@ import org.springframework.stereotype.Service;
 
 import com.nota.sistemanf.entidades.Cliente;
 import com.nota.sistemanf.entidades.Item;
+import com.nota.sistemanf.entidades.Nota;
 import com.nota.sistemanf.entidades.Produto;
 import com.nota.sistemanf.repository.ClienteRepository;
 import com.nota.sistemanf.repository.ProdutoRepository;
 
 @Service
 public class Valida {
-	@Autowired
-	ClienteRepository clienteRepo;
+
+	private ClienteRepository clienteRepo;
+	private ProdutoRepository produtoRepo;
 
 	@Autowired
-	ProdutoRepository produtoRepo;
+	public Valida(ClienteRepository clienteRepo, ProdutoRepository produtoRepo) {
+		this.clienteRepo = clienteRepo;
+		this.produtoRepo = produtoRepo;
+	}
 
 	public StatusRegistro cliente(Cliente c1) {
 
@@ -30,7 +35,7 @@ public class Valida {
 
 	public StatusRegistro produto(Produto p) {
 
-		if (p.getNome() == null && p.getPreco() == null) {
+		if (p == null || p.getNome() == null && p.getPreco() == null) {
 			return StatusRegistro.NULL;
 
 		}
@@ -38,6 +43,7 @@ public class Valida {
 			return StatusRegistro.ATRIBUTOS_INVALIDOS;
 
 		}
+
 		if (produtoRepo.findByNomeIgnoreCase(p.getNome()) != null) {
 			return StatusRegistro.PRESENTE_NO_BD;
 
@@ -46,6 +52,7 @@ public class Valida {
 	}
 
 	public StatusRegistro item(Item item) {
+
 		StatusRegistro statusProduto = produto(item.getProduto());
 
 		if (item.getQuantidade() == 0 && statusProduto == StatusRegistro.NULL) {
@@ -60,4 +67,14 @@ public class Valida {
 		}
 		return StatusRegistro.OK;
 	}
+
+	public StatusRegistro nota(Nota nota) {
+
+		if (nota.getCliente() == null || nota.getCliente().getNome() == null || nota.getItens().size() == 0) {
+			return StatusRegistro.ATRIBUTOS_INVALIDOS;
+		}
+
+		return StatusRegistro.OK;
+	}
+
 }

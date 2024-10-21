@@ -42,24 +42,28 @@ public class ProdutoController {
 
 			StatusRegistro status = valida.produto(produto);
 
-			if (status == StatusRegistro.OK) {
-
+			switch (status) {
+			case OK:
 				produtoRepo.save(produto);
 				statusRegistro += produto.getNome() + " : ok";
+				break;
 
-			} else if (status == StatusRegistro.NULL) {
+			case NULL:
 				statusRegistro += "null : nao cadastrado";
+				break;
 
-			} else if (status == StatusRegistro.PRESENTE_NO_BD) {
+			case PRESENTE_NO_BD:
 				statusRegistro += produto.getNome() + " : presente no BD";
+				break;
 
-			} else if (status == StatusRegistro.ATRIBUTOS_INVALIDOS) {
+			case ATRIBUTOS_INVALIDOS:
 				statusRegistro += " ! : contem atributos invalidos";
+				break;
 			}
 
 			statusCadastro.add(statusRegistro);
 		});
-		
+
 		return statusCadastro;
 	}
 

@@ -45,8 +45,8 @@ public class ItemController {
 			StatusRegistro statusItem = valida.item(item);
 			StatusRegistro statusProduto = valida.produto(item.getProduto());
 
-			if (statusItem == StatusRegistro.OK) {
-
+			switch (statusItem) {
+			case OK:
 				Produto produto = null;
 
 				if (statusProduto != StatusRegistro.PRESENTE_NO_BD) {
@@ -63,15 +63,19 @@ public class ItemController {
 
 				itemRepo.save(item);
 				statusRegistro += "item-" + item.getProduto().getNome() + "-qtd" + item.getQuantidade() + " : ok";
+				break;
 
-			} else if (statusItem == StatusRegistro.NULL) {
+			case NULL:
 				statusRegistro += "null : nao cadastrado";
+				break;
 
-			} else if (statusItem == StatusRegistro.DEPENDENCIA_INVALIDA) {
+			case DEPENDENCIA_INVALIDA:
 				statusRegistro += "! : Erro no produto";
+				break;
 
-			} else if (statusItem == StatusRegistro.ATRIBUTOS_INVALIDOS) {
+			case ATRIBUTOS_INVALIDOS:
 				statusRegistro += "! : Atributo inválido";
+				break;
 			}
 
 			statusCadastro.add(statusRegistro);

@@ -8,6 +8,6 @@ import com.nota.sistemanf.entidades.Cliente;
 
 public interface ClienteRepository extends PagingAndSortingRepository<Cliente, Integer> {
 
-	List<Cliente> findByNomeIgnoreCase(String nome);
+	Cliente findByNomeIgnoreCase(String nome);
 
 }

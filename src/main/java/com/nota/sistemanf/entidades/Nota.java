@@ -21,7 +21,7 @@ public class Nota {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
-	private static Integer numero = 0;
+	private Integer numero;
 	private Date data_emissao = new Date(System.currentTimeMillis());
 
 	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
@@ -31,24 +31,27 @@ public class Nota {
 	private List<Item> itens = new ArrayList<Item>();
 
 	private BigDecimal valorTotal = new BigDecimal(0);
+	
 
 	public Nota() {
-		this.numero++;
 	}
 
-	public Nota(Cliente cliente, List<Item> itens) {
+	public Nota(Cliente cliente, List<Item> itens, Integer numero) {
 		this.cliente = cliente;
 		this.itens = itens;
 
-		this.numero++;
-		calcValorTotalNota();
+		this.numero = numero;
+		this.valorTotal = calcValorTotalNota();
 	}
 
 	private BigDecimal calcValorTotalNota() {
-		BigDecimal valorTot = new BigDecimal(0);
+		BigDecimal valorTot = BigDecimal.ZERO;
 
 		if (!itens.isEmpty()) {
-			this.itens.forEach(item -> valorTot.add(item.getValorTotal()));
+
+			for (Item item : itens) {
+				valorTot = valorTot.add(item.getValorTotal());
+			}
 		}
 
 		return valorTot;
@@ -81,7 +84,7 @@ public class Nota {
 	public void setItens(List<Item> itens) {
 		this.itens = itens;
 
-		calcValorTotalNota();
+		this.valorTotal = calcValorTotalNota();
 	}
 
 	public BigDecimal getValorTotal() {
@@ -92,4 +95,8 @@ public class Nota {
 		return id;
 	}
 
+	public void setNumero(Integer numero) {
+		this.numero = numero;
+	}
+	
 }
