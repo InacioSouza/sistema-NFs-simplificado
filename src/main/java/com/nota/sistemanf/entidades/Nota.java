@@ -5,14 +5,12 @@ import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
 @Entity
@@ -21,30 +19,31 @@ public class Nota {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
-	private Integer numero;
+
+	private String numero;
+
 	private Date data_emissao = new Date(System.currentTimeMillis());
 
-	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+	@ManyToOne
 	private Cliente cliente;
 
-	@OneToMany
+	@OneToMany(mappedBy = "nota")
 	private List<Item> itens = new ArrayList<Item>();
 
 	private BigDecimal valorTotal = new BigDecimal(0);
-	
 
 	public Nota() {
 	}
 
-	public Nota(Cliente cliente, List<Item> itens, Integer numero) {
+	public Nota(Cliente cliente, List<Item> itens, String numero) {
 		this.cliente = cliente;
 		this.itens = itens;
 
 		this.numero = numero;
-		this.valorTotal = calcValorTotalNota();
+		calcValorTotalNota();
 	}
 
-	private BigDecimal calcValorTotalNota() {
+	public void calcValorTotalNota() {
 		BigDecimal valorTot = BigDecimal.ZERO;
 
 		if (!itens.isEmpty()) {
@@ -54,11 +53,8 @@ public class Nota {
 			}
 		}
 
-		return valorTot;
-	}
+		this.valorTotal = valorTot;
 
-	public Integer getNumero() {
-		return numero;
 	}
 
 	public Date getData_emissao() {
@@ -84,7 +80,7 @@ public class Nota {
 	public void setItens(List<Item> itens) {
 		this.itens = itens;
 
-		this.valorTotal = calcValorTotalNota();
+		calcValorTotalNota();
 	}
 
 	public BigDecimal getValorTotal() {
@@ -95,8 +91,12 @@ public class Nota {
 		return id;
 	}
 
-	public void setNumero(Integer numero) {
+	public void setNumero(String numero) {
 		this.numero = numero;
 	}
-	
+
+	public String getNumero() {
+		return numero;
+	}
+
 }

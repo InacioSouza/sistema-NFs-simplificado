@@ -14,15 +14,18 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.nota.sistemanf.entidades.Cliente;
 import com.nota.sistemanf.entidades.Item;
 import com.nota.sistemanf.entidades.Nota;
+import com.nota.sistemanf.entidades.Produto;
 import com.nota.sistemanf.repository.ClienteRepository;
 import com.nota.sistemanf.repository.ItemRepository;
 import com.nota.sistemanf.repository.NotaRepository;
+import com.nota.sistemanf.repository.ProdutoRepository;
 import com.nota.sistemanf.services.Cadastra;
 import com.nota.sistemanf.services.StatusRegistro;
 import com.nota.sistemanf.services.Valida;
@@ -34,8 +37,8 @@ public class NotaController {
 	private NotaRepository notaRepo;
 	private ClienteRepository clienteRepo;
 	private ItemRepository itemRepo;
+	private ProdutoRepository produtoRepo;
 	private Valida valida;
-	private Cadastra cadastra;
 
 	public NotaController() {
 
@@ -43,63 +46,63 @@ public class NotaController {
 
 	@Autowired
 	public NotaController(NotaRepository notaRepo, ClienteRepository clienteRepo, ItemRepository itemRepo,
-			Valida valida, Cadastra cadastra) {
+			Valida valida, Cadastra cadastra, ProdutoRepository produtoRepo) {
 		this.notaRepo = notaRepo;
 		this.clienteRepo = clienteRepo;
 		this.itemRepo = itemRepo;
+		this.produtoRepo = produtoRepo;
 		this.valida = valida;
-		this.cadastra = cadastra;
 	}
 
 	@PostMapping
-	List<String> cadastraNota(@RequestBody List<Nota> notas) {
+	String cadastraNota(@RequestBody Nota nota) {
 
-		List<String> statusCadastro = new ArrayList<String>();
+		if (nota.getItens() == null || nota.getItens().size() == 0) {
+			return "! : Deve haver ao menos 1 item na nota";
+		}
 
-		notas.forEach(nota -> {
+		if (nota.getCliente() == null || nota.getCliente().getNome() == null) {
+			return "! : Nenhum cliente adicionado";
+		} else {
+			Cliente clienteNota = clienteRepo.findByNomeIgnoreCase(nota.getCliente().getNome());
 
-			String statusRegistro = "";
-
-			StatusRegistro status = valida.nota(nota);
-
-			switch (status) {
-			case OK:
-				cadastra.itens(nota.getItens());
-
-				StatusRegistro statusCliente = valida.cliente(nota.getCliente());
-
-				Cliente cliente = null;
-
-				if (statusCliente == StatusRegistro.PRESENTE_NO_BD) {
-					cliente = clienteRepo.findByNomeIgnoreCase(nota.getCliente().getNome());
-
-					nota.setCliente(cliente);
-
-				} else if (statusCliente == StatusRegistro.OK) {
-					clienteRepo.save(nota.getCliente());
-				}
-
-				notaRepo.save(nota);
-
-				statusRegistro += "nota-n" + nota.getNumero() + "-cliente" + nota.getCliente().getNome() + "-"
-						+ nota.getItens().size() + "-qtdItens : ok";
-				break;
-
-			case ATRIBUTOS_INVALIDOS:
-				statusRegistro += "! : Atributo inválido";
-				break;
-			case PRESENTE_NO_BD:
-				statusRegistro += "nota-n" + nota.getNumero() + "-cliente" + nota.getCliente().getNome() + "-"
-						+ nota.getItens().size() + "-qtdItens : Presente no BD";
-				break;
-
+			if (clienteNota == null) {
+				clienteNota = clienteRepo.save(nota.getCliente());
 			}
 
-			statusCadastro.add(statusRegistro);
+			nota.setCliente(clienteNota);
+		}
 
-		});
+		try {
+			Nota notaComId = notaRepo.save(nota);
 
-		return statusCadastro;
+			for (Item itemNota : nota.getItens()) {
+
+				itemNota.setNota(notaComId);
+
+				Produto produtoItem = produtoRepo.findByNomeIgnoreCase(itemNota.getProduto().getNome());
+
+				if (produtoItem == null) {
+					produtoItem = produtoRepo.save(itemNota.getProduto());
+				}
+
+				itemNota.setProduto(produtoItem);
+
+				itemRepo.save(itemNota);
+			}
+
+			String numeroNota = notaComId.getCliente().getId() + "." + notaComId.getItens().get(0).getId();
+
+			notaComId.setNumero(numeroNota);
+
+			notaRepo.save(notaComId);
+
+		} catch (Exception e) {
+			notaRepo.deleteById(nota.getId());
+			return "! : Erro ao cadastrar a nota";
+		}
+
+		return "ok : nota cadastrada";
 	}
 
 	@GetMapping
@@ -116,35 +119,92 @@ public class NotaController {
 		return ResponseEntity.ok(nota);
 	}
 
+	@GetMapping("/buscar")
+	Nota buscaNotaPorNumero(@RequestParam String numero) {
+		Nota nota = notaRepo.findByNumero(numero);
+
+		if (nota == null) {
+			return null;
+		}
+
+		return nota;
+	}
+
+	@GetMapping("/cliente/{id}")
+	List<Nota> buscarNotasPorIdCliente(@PathVariable Integer id) {
+		List<Nota> notas = notaRepo.findByClienteId(id);
+
+		return notas;
+	}
+
+	@GetMapping("/cliente")
+	List<Nota> buscarNotasPorNomeCliente(@RequestParam String nome) {
+		Cliente cliente = clienteRepo.findByNomeIgnoreCase(nome);
+
+		if (cliente == null) {
+			return null;
+		}
+
+		List<Nota> notas = notaRepo.findByClienteId(cliente.getId());
+
+		if (notas == null) {
+			return new ArrayList<Nota>();
+		}
+
+		return notas;
+	}
+
 	@PutMapping("{id}")
 	ResponseEntity<Nota> alteraNota(@PathVariable Integer id, @RequestBody Nota notaAtualizada) {
+
+		int qtdItensNotaAtualizada = notaAtualizada.getItens().size();
+
+		if (qtdItensNotaAtualizada == 0) {
+			return null;
+		}
 
 		Nota notaExistente = notaRepo.findById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nota não encontrada"));
 
-		if (notaAtualizada.getNumero() != 0 && notaAtualizada.getNumero() != null) {
-			if (notaExistente.getNumero() != notaAtualizada.getNumero()) {
-				notaExistente.setNumero(notaAtualizada.getNumero());
-			}
-		}
+		List<Item> itensValidados = new ArrayList<Item>();
 
-		if (notaAtualizada.getItens().size() != 0) {
+		notaExistente.getItens().forEach(item -> {
+			itemRepo.deleteById(item.getId());
+		});
 
-			List<Item> itensNtA = notaAtualizada.getItens();
-			List<Item> itensValidados = new ArrayList<Item>();
+		notaAtualizada.getItens().forEach(item -> {
 
-			itensNtA.forEach(item -> {
+			item.setNota(notaExistente);
 
-				if (valida.item(item) == StatusRegistro.OK) {
-					itensValidados.add(item);
+			StatusRegistro statusItem = valida.item(item);
+
+			System.out.println("\n\n Qual é o status do item ? " + statusItem + "\n\n");
+			if (statusItem == StatusRegistro.OK) {
+
+				StatusRegistro statusproduto = valida.produto(item.getProduto());
+
+				Produto produto = null;
+
+				if (statusproduto == StatusRegistro.PRESENTE_NO_BD) {
+					produto = produtoRepo.findByNomeIgnoreCase(item.getProduto().getNome());
+				} else if (statusproduto == StatusRegistro.OK) {
+					produto = produtoRepo.save(item.getProduto());
+				} else {
+					return;
 				}
 
-			});
+				item.setProduto(produto);
 
-			if (itensValidados.size() != 0) {
-				List<Item> itensCadastradosBD = (List<Item>) itemRepo.saveAll(itensValidados);
-				notaExistente.setItens(itensCadastradosBD);
+				itensValidados.add(item);
 			}
+
+		});
+
+		if (itensValidados.size() != 0) {
+			notaExistente.setItens((List<Item>) itemRepo.saveAll(itensValidados));
+			notaExistente.calcValorTotalNota();
+		} else {
+			return null;
 		}
 
 		if (notaAtualizada.getCliente() != null) {
@@ -164,6 +224,86 @@ public class NotaController {
 			}
 		}
 
+		notaExistente.setNumero(notaExistente.getCliente().getId() + "." + notaExistente.getItens().get(0).getId());
+
+		return ResponseEntity.ok(notaRepo.save(notaExistente));
+	}
+
+	@PutMapping("/buscar")
+	ResponseEntity<Nota> alteraNotaPorNumero(@RequestParam String numero, @RequestBody Nota notaAtualizada) {
+
+		int qtdItensNotaAtualizada = notaAtualizada.getItens().size();
+
+		if (qtdItensNotaAtualizada == 0) {
+			return null;
+		}
+
+		Nota notaExistente = notaRepo.findByNumero(numero);
+
+		if (notaExistente == null) {
+			return null;
+		}
+
+		List<Item> itensValidados = new ArrayList<Item>();
+
+		notaExistente.getItens().forEach(item -> {
+			itemRepo.deleteById(item.getId());
+		});
+
+		notaAtualizada.getItens().forEach(item -> {
+
+			item.setNota(notaExistente);
+
+			StatusRegistro statusItem = valida.item(item);
+
+			System.out.println("\n\n Qual é o status do item ? " + statusItem + "\n\n");
+			if (statusItem == StatusRegistro.OK) {
+
+				StatusRegistro statusproduto = valida.produto(item.getProduto());
+
+				Produto produto = null;
+
+				if (statusproduto == StatusRegistro.PRESENTE_NO_BD) {
+					produto = produtoRepo.findByNomeIgnoreCase(item.getProduto().getNome());
+				} else if (statusproduto == StatusRegistro.OK) {
+					produto = produtoRepo.save(item.getProduto());
+				} else {
+					return;
+				}
+
+				item.setProduto(produto);
+
+				itensValidados.add(item);
+			}
+
+		});
+
+		if (itensValidados.size() != 0) {
+			notaExistente.setItens((List<Item>) itemRepo.saveAll(itensValidados));
+			notaExistente.calcValorTotalNota();
+		} else {
+			return null;
+		}
+
+		if (notaAtualizada.getCliente() != null) {
+			if (notaExistente.getCliente().getNome() != notaAtualizada.getCliente().getNome()
+					&& notaAtualizada.getCliente().getNome() != null) {
+
+				StatusRegistro statusCliente = valida.cliente(notaAtualizada.getCliente());
+				Cliente clienteFinal = null;
+
+				if (statusCliente == StatusRegistro.PRESENTE_NO_BD) {
+					clienteFinal = clienteRepo.findByNomeIgnoreCase(notaAtualizada.getCliente().getNome());
+				} else {
+					clienteFinal = clienteRepo.save(notaAtualizada.getCliente());
+				}
+
+				notaExistente.setCliente(clienteFinal);
+			}
+		}
+
+		notaExistente.setNumero(notaExistente.getCliente().getId() + "." + notaExistente.getItens().get(0).getId());
+
 		return ResponseEntity.ok(notaRepo.save(notaExistente));
 	}
 
@@ -173,6 +313,10 @@ public class NotaController {
 		Nota nota = notaRepo.findById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nota não encontrada"));
 		Hibernate.initialize(nota.getItens());
+
+		nota.getItens().forEach(item -> {
+			itemRepo.deleteById(item.getId());
+		});
 
 		notaRepo.deleteById(id);
 

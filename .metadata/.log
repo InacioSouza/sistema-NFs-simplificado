@@ -1,0 +1,26 @@
+!SESSION 2024-10-21 13:01:59.442 -----------------------------------------------
+eclipse.buildId=4.33.0.20240905-0613
+java.version=21.0.4
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=linux, ARCH=x86_64, WS=gtk, NL=pt_BR
+Framework arguments:  -product org.eclipse.epp.package.jee.product
+Command-line arguments:  -os linux -ws gtk -arch x86_64 -product org.eclipse.epp.package.jee.product -data /home/inaci/eclipse-workspace/sistema-nf
+
+!ENTRY ch.qos.logback.classic 1 0 2024-10-21 13:02:07.468
+!MESSAGE Activated before the state location was initialized. Retry after the state location is initialized.
+
+!ENTRY ch.qos.logback.classic 1 0 2024-10-21 13:02:10.888
+!MESSAGE Logback config file: /home/inaci/eclipse-workspace/sistema-nf/.metadata/.plugins/org.eclipse.m2e.logback/logback.2.6.1.20240411-1122.xml
+!SESSION 2024-10-22 21:04:09.221 -----------------------------------------------
+eclipse.buildId=4.33.0.20240905-0613
+java.version=21.0.4
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=linux, ARCH=x86_64, WS=gtk, NL=pt_BR
+Framework arguments:  -product org.eclipse.epp.package.jee.product
+Command-line arguments:  -os linux -ws gtk -arch x86_64 -product org.eclipse.epp.package.jee.product -data /home/inaci/eclipse-workspace/sistema-nf
+
+!ENTRY ch.qos.logback.classic 1 0 2024-10-22 21:04:15.104
+!MESSAGE Activated before the state location was initialized. Retry after the state location is initialized.
+
+!ENTRY ch.qos.logback.classic 1 0 2024-10-22 21:04:17.130
+!MESSAGE Logback config file: /home/inaci/eclipse-workspace/sistema-nf/.metadata/.plugins/org.eclipse.m2e.logback/logback.2.6.1.20240411-1122.xml

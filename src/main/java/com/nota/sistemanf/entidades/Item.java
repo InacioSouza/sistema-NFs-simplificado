@@ -6,32 +6,35 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "itens")
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Item {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
-
-	private Integer numero;
 
 	@OneToOne
 	private Produto produto;
 	private Integer quantidade = 0;
 	private BigDecimal valorTotal = BigDecimal.ZERO;
 
+	@ManyToOne
+	@JoinColumn(name = "nota_id", nullable = false)
+	@JsonIgnore
+	private Nota nota;
+
 	public Item() {
 		this.valorTotal = atualizaValorTotal();
 	}
 
-	public Item(Integer numero, Produto p, Integer quantidade) {
-		this.numero = numero;
+	public Item(Produto p, Integer quantidade) {
 
 		this.produto = p;
 
@@ -45,14 +48,6 @@ public class Item {
 			return this.produto.getPreco().multiply(new BigDecimal(this.quantidade));
 		}
 		return BigDecimal.ZERO;
-	}
-
-	public Integer getNumero() {
-		return numero;
-	}
-
-	public void setNumero(Integer numero) {
-		this.numero = numero;
 	}
 
 	public Produto getProduto() {
@@ -82,6 +77,20 @@ public class Item {
 
 	public Integer getId() {
 		return id;
+	}
+
+	public Nota getNota() {
+		return nota;
+	}
+
+	public void setNota(Nota nota) {
+		this.nota = nota;
+	}
+
+	@Override
+	public String toString() {
+		return "Item [id=" + id + ", produto=" + produto.getNome() + ", quantidade=" + quantidade + ", valorTotal="
+				+ valorTotal + ", nota=" + nota + "]";
 	}
 
 }
